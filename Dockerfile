@@ -7,6 +7,7 @@ ENV PATH=$PATH:/home/node/api/node_modules/.bin
 USER node
 
 # Needed because WORKDIR creates directories as root
+# Should add && cd /home/node/api and delete WORKDIR line
 RUN mkdir -p /home/node/api
 
 # Create app directory, doesnt take USER in mind
@@ -25,5 +26,3 @@ RUN npm install
 COPY . .
 
 EXPOSE 3000
-
-CMD ["node", "index.js"]

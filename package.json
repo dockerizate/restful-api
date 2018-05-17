@@ -1,22 +1,35 @@
 {
-  "name": "restful-api",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "adonis-api-app",
+  "version": "4.1.0",
+  "adonis-version": "4.1.0",
+  "description": "Adonisjs boilerplate for API server with pre-configured JWT",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node_modules/.bin/adonis serve --dev -p --polling",
+    "start": "node server.js",
+    "test": "node ace test"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/dockerizate/restful-api.git"
-  },
+  "keywords": [
+    "adonisjs",
+    "adonis-app"
+  ],
   "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/dockerizate/restful-api/issues"
-  },
-  "homepage": "https://github.com/dockerizate/restful-api#readme",
+  "license": "UNLICENSED",
+  "private": true,
   "dependencies": {
-    "express": "^4.16.3"
+    "@adonisjs/ace": "^5.0.1",
+    "@adonisjs/auth": "^3.0.4",
+    "@adonisjs/bodyparser": "^2.0.2",
+    "@adonisjs/cors": "^1.0.5",
+    "@adonisjs/fold": "^4.0.7",
+    "@adonisjs/framework": "^5.0.5",
+    "@adonisjs/ignitor": "^2.0.6",
+    "@adonisjs/lucid": "^5.0.3"
+  },
+  "devDependencies": {
+    "@adonisjs/cli": "^4.0.4"
+  },
+  "autoload": {
+    "App": "./app"
   }
 }
