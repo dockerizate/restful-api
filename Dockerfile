@@ -26,3 +26,5 @@ RUN npm install
 COPY . .
 
 EXPOSE 3000
+
+CMD ["node ace migration:run && node server.js"]
