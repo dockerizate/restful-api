@@ -25,6 +25,7 @@
     "@adonisjs/framework": "^5.0.5",
     "@adonisjs/ignitor": "^2.0.6",
     "@adonisjs/lucid": "^5.0.3",
+    "@adonisjs/redis": "^2.0.6",
     "mysql": "^2.15.0",
     "pm2": "^2.10.4"
   },

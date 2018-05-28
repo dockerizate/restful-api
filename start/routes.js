@@ -14,10 +14,12 @@
 */
 
 const Route = use('Route')
+const Database = use('Database')
 
-Route.get('/', ({ request }) => {
+Route.get('/', async ({ request }) => {
   return {
     greeting: 'Hello world in JSON',
+    migrations_ran: await Database.select('*').from('adonis_schema'),
     env: process.env
   }
 })
