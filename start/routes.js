@@ -18,6 +18,8 @@ const Database = use('Database')
 const Redis = use('Redis')
 const Drive = use('Drive')
 const Helpers = use('Helpers')
+const Gallery = use('App/Models/Gallery')
+const Picture = use('App/Models/Picture')
 
 Route.get('/', async ({ request }) => {
   let cache = await Redis.get('response')
@@ -29,6 +31,8 @@ Route.get('/', async ({ request }) => {
   }
 
   const response = {
+    ip: request.ip(),
+    ips: request.ips(),
     file_exists: await Drive.exists('vvv.jpg') ? 'cool' : 'fack',
     greeting: 'Hello world in JSON',
     migrations_ran: await Database.select('*').from('adonis_schema'),
@@ -39,19 +43,50 @@ Route.get('/', async ({ request }) => {
   return response
 })
 
-Route.post('/upload', async ({ request }) => {
-  console.log('upload')
+Route.get('/galleries', async () => {
+  return await Gallery.query()
+    .with('pictures')
+    .fetch()
+})
+
+Route.post('/galleries', async ({ request }) => {
+  const title = request.input('title', 'default title')
+  const gallery = new Gallery
+  gallery.title = title
+  await gallery.save()
+
+  return {
+    location: {
+      url: '/upload/gallery/' + gallery.id,
+      method: 'post'
+    }
+  }
+})
+
+Route.post('/upload/gallery/:id', async ({ request, params, response }) => {
+  let filePath
   request.multipart.file('picture', {
     types: ['image'],
     size: '8mb'
-  }, async (file) => {
-      console.log('processing', file.clientName)
-      await Drive.put(file.clientName, file.stream)
+  }, async (file) => { // should be leveraged to a lambda func
+      // validate
+      // generate resize & thumbnails
+      // check sha256 and store it as Picture.checksum
+      filePath = 'gallery/' + params.id + '/' + Date.now() + '.' + file.subtype
+      await Drive.put(filePath, file.stream)
     })
 
   await request.multipart.process()
 
-  return 'ok'
+  const pic = new Picture
+  pic.gallery_id = params.id
+  pic.bucket = Drive._config.disks.s3.bucket
+  pic.path = filePath
+  await pic.save()
+
+  response.send({
+    data: pic
+  })
 
   // const profilePics = request.file('profile_pics', {
   //   types: ['image'],
