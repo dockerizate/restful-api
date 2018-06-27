@@ -105,13 +105,13 @@ Route.post('/upload/gallery/:id', async ({ request, params, response }) => {
 
   await request.multipart.process() // execute listeners
 
-  const pic = new Picture
-  pic.gallery_id = params.id
-  pic.bucket = Drive._config.disks.s3.bucket
-  pic.path = filePath
-  await pic.save()
+  const picture = new Picture
+  picture.gallery_id = params.id
+  picture.bucket = Drive._config.disks.s3.bucket
+  picture.path = filePath
+  await picture.save()
 
   response.send({
-    data: pic
+    data: picture
   })
 })
