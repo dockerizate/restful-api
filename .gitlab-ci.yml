@@ -1,0 +1,43 @@
+stages:
+  # - build
+  # - test
+  - release
+  # - deploy
+
+release:
+  stage: release
+  image: docker:stable
+  only:
+    - "master"
+  services:
+    - docker:dind
+  variables:
+    IMAGE_TAG_SHA: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    IMAGE_TAG_LATEST: $CI_REGISTRY_IMAGE:latest
+    DOCKER_DRIVER: overlay2
+  before_script:
+    - docker version
+    - "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com"
+  script:
+    # - docker pull $IMAGE_TAG_LATEST || true # to use with --cache-from at docker build
+    - "docker build --tag $IMAGE_TAG_LATEST --tag $IMAGE_TAG_SHA ."
+    - "docker push $IMAGE_TAG_SHA"
+    - "docker push $IMAGE_TAG_LATEST"
+  # after_script:
+  #   - "docker logout ${CI_REGISTRY}"
+
+# build:
+#   stage: build
+#   image: node:8-alpine
+#   variables:
+#     NODE_ENV: "development"
+#   before_script:
+#     - apk add --update bash
+#     - apk add --update git && rm -rf /tmp/* /var/cache/apk/*
+#     - npm install
+#   script:
+#     - npm run build
+#   artifacts:
+#     paths:
+#      - server/
+#      - public/

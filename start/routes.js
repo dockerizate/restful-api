@@ -1,18 +1,5 @@
 'use strict'
 
-/*
-|--------------------------------------------------------------------------
-| Routes
-|--------------------------------------------------------------------------
-|
-| Http routes are entry points to your web application. You can create
-| routes for different URL's and bind Controller actions to them.
-|
-| A complete guide on routing is available here.
-| http://adonisjs.com/docs/4.0/routing
-|
-*/
-
 const Route = use('Route')
 const Database = use('Database')
 const Redis = use('Redis')
@@ -33,6 +20,7 @@ Route.get('/', async ({ request }) => {
   const response = {
     ip: request.ip(),
     ips: request.ips(),
+    headers: request.headers(),
     file_exists: await Drive.exists('vvv.jpg') ? 'cool' : 'fack',
     greeting: 'Hello world in JSON',
     migrations_ran: await Database.select('*').from('adonis_schema'),
@@ -63,20 +51,59 @@ Route.post('/galleries', async ({ request }) => {
   }
 })
 
+Route.delete('/galleries/:id', async ({ request, response, params }) => {
+  const gallery = await Gallery.query()
+    .with('pictures').where('id', params.id).first()
+  if (!gallery) return response.status(410).send()
+
+  // instance of stupid VanillaSerializer
+  const pictures = gallery.getRelated('pictures')
+
+  // if (pictures && pictures.rows) { // individual deletion
+  //   pictures.rows.forEach(pic => {
+  //     if (await Drive.delete(pic.path)) {
+  //       await pic.delete()
+  //     }
+  //   })
+  // }
+
+  const removing = []
+  pictures.rows.forEach(pic => removing.push(Drive.delete(pic.path)))
+
+  const removed = await Promise.all(removing)
+
+  if (removed.every(p => p === true)) {
+    await gallery.delete()
+  }
+  else {
+    console.log(666, removed)
+  }
+
+  return response.status(204).send('ok')
+})
+
 Route.post('/upload/gallery/:id', async ({ request, params, response }) => {
   let filePath
+
+  // set the listener
+  // (should be leveraged to a lambda func)
   request.multipart.file('picture', {
     types: ['image'],
-    size: '8mb'
-  }, async (file) => { // should be leveraged to a lambda func
-      // validate
+    // size: '8mb' // not needed because of nginx client_max_body_size 8m
+  }, async (file) => {
+      const contentType = file.type + '/' + file.subtype
+      // validate file (& contentType)
       // generate resize & thumbnails
       // check sha256 and store it as Picture.checksum
       filePath = 'gallery/' + params.id + '/' + Date.now() + '.' + file.subtype
-      await Drive.put(filePath, file.stream)
+      // const result = await Drive.put
+      await Drive.put(filePath, file.stream, {
+        ContentType: contentType
+      })
+      // result.Key not supported yet
     })
 
-  await request.multipart.process()
+  await request.multipart.process() // execute listeners
 
   const pic = new Picture
   pic.gallery_id = params.id
@@ -87,17 +114,4 @@ Route.post('/upload/gallery/:id', async ({ request, params, response }) => {
   response.send({
     data: pic
   })
-
-  // const profilePics = request.file('profile_pics', {
-  //   types: ['image'],
-  //   size: '2mb'
-  // })
-
-  // await profilePics.moveAll(Helpers.tmpPath('uploads'))
-
-  // if (!profilePics.movedAll()) {
-  //   return profilePics.errors()
-  // }
-
-  // return 'File moved'
 })
