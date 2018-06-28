@@ -1,43 +1,49 @@
+image: docker:stable
+services:
+- docker:dind
+
 stages:
-  # - build
-  # - test
-  - release
-  # - deploy
+- build
+- test
+- release
+# - deploy
 
-release:
-  stage: release
-  image: docker:stable
-  only:
-    - "master"
-  services:
-    - docker:dind
-  variables:
-    IMAGE_TAG_SHA: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-    IMAGE_TAG_LATEST: $CI_REGISTRY_IMAGE:latest
-    DOCKER_DRIVER: overlay2
-  before_script:
-    - docker version
-    - "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com"
+variables:
+  IMAGE_TAG_SHA: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+  IMAGE_TAG_LATEST: $CI_REGISTRY_IMAGE:latest
+  DOCKER_DRIVER: overlay2
+
+before_script:
+  - "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN registry.gitlab.com"
+
+build:
+  stage: build
   script:
-    # - docker pull $IMAGE_TAG_LATEST || true # to use with --cache-from at docker build
-    - "docker build --tag $IMAGE_TAG_LATEST --tag $IMAGE_TAG_SHA ."
-    - "docker push $IMAGE_TAG_SHA"
-    - "docker push $IMAGE_TAG_LATEST"
-  # after_script:
-  #   - "docker logout ${CI_REGISTRY}"
+    - docker pull $IMAGE_TAG_LATEST || true
+    - docker build --cache-from $IMAGE_TAG_LATEST --pull -t $IMAGE_TAG_SHA .
+    - docker push $IMAGE_TAG_SHA
 
-# build:
-#   stage: build
-#   image: node:8-alpine
-#   variables:
-#     NODE_ENV: "development"
-#   before_script:
-#     - apk add --update bash
-#     - apk add --update git && rm -rf /tmp/* /var/cache/apk/*
-#     - npm install
+test:
+  stage: test
+  environment:
+    - ENV_SILENT=true
+    - DRIVE_DISK=s3
+  script:
+    - docker pull $IMAGE_TAG_SHA
+    - docker run $IMAGE_TAG_SHA node /home/node/api/ace test
+
+release-image:
+  stage: release
+  script:
+    - docker pull $IMAGE_TAG_SHA
+    - docker tag $IMAGE_TAG_SHA $IMAGE_TAG_LATEST
+    - docker push $IMAGE_TAG_LATEST
+  only:
+    - master
+
+# deploy:
+#   stage: deploy
 #   script:
-#     - npm run build
-#   artifacts:
-#     paths:
-#      - server/
-#      - public/
+#     - ./deploy.sh
+#   only:
+#     - master
